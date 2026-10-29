@@ -1,0 +1,8 @@
+{
+  "name": "مدرسة الكوثر الأهلية",
+  "short_name": "الكوثر",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0F3B8C",
+  "theme_color": "#0F3B8C"
+}
