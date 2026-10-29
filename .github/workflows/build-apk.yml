@@ -3,30 +3,34 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: actions/setup-java@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Create Android Project
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create WebView APK Project
         run: |
           rm -rf android
           mkdir -p android/app/src/main/java/com/kawthar/school
           mkdir -p android/app/src/main/assets
-          mkdir -p android/gradle/wrapper
           
-          cp index.html android/app/src/main/assets/ || echo "<h1>Kawthar</h1>" > android/app/src/main/assets/index.html
+          cp index.html android/app/src/main/assets/ || echo "<h1>الكوثر</h1>" > android/app/src/main/assets/index.html
           
-          cat > android/app/src/main/AndroidManifest.xml << 'MAN'
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.kawthar.school">
             <uses-permission android:name="android.permission.INTERNET"/>
-            <application android:label="الكوثر">
+            <application android:label="مدرسة الكوثر">
               <activity android:name=".MainActivity" android:exported="true">
                 <intent-filter>
                   <action android:name="android.intent.action.MAIN"/>
@@ -35,18 +39,18 @@ jobs:
               </activity>
             </application>
           </manifest>
-          MAN
+          EOF
           
-          cat > android/app/src/main/java/com/kawthar/school/MainActivity.java << 'JAVA'
+          cat > android/app/src/main/java/com/kawthar/school/MainActivity.java << 'EOF'
           package com.kawthar.school;
           import android.app.Activity;
           import android.os.Bundle;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           public class MainActivity extends Activity {
-            protected void onCreate(Bundle b) {
+            protected void onCreate(Bundle b){
               super.onCreate(b);
-              WebView w = new WebView(this);
+              WebView w=new WebView(this);
               w.getSettings().setJavaScriptEnabled(true);
               w.getSettings().setDomStorageEnabled(true);
               w.getSettings().setAllowFileAccess(true);
@@ -55,9 +59,9 @@ jobs:
               setContentView(w);
             }
           }
-          JAVA
+          EOF
           
-          cat > android/app/build.gradle << 'GRADLE'
+          cat > android/app/build.gradle << 'EOF'
           plugins { id 'com.android.application' }
           android {
               namespace 'com.kawthar.school'
@@ -69,44 +73,29 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-              buildTypes {
-                  release { minifyEnabled false }
-                  debug { minifyEnabled false }
-              }
           }
-          GRADLE
+          EOF
           
-          cat > android/settings.gradle << 'SG'
+          cat > android/settings.gradle << 'EOF'
           include ':app'
-          SG
+          EOF
           
-          cat > android/build.gradle << 'BG'
+          cat > android/build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.1.0' }
           }
           allprojects { repositories { google(); mavenCentral() } }
-          BG
+          EOF
           
-          echo "distributionUrl=https://services.gradle.org/distributions/gradle-8.0-all.zip" > android/gradle/wrapper/gradle-wrapper.properties
-          
-          cat > android/gradlew << 'GW'
-          #!/bin/sh
-          DIR=$(dirname $0)
-          exec java -jar $DIR/gradle/wrapper/gradle-wrapper.jar "$@"
-          GW
-          chmod +x android/gradlew
-          
-          wget -q https://services.gradle.org/distributions/gradle-8.0-all.zip -O /tmp/g.zip || true
-          wget -q https://github.com/gradle/gradle/raw/v8.0.0/gradle/wrapper/gradle-wrapper.jar -O android/gradle/wrapper/gradle-wrapper.jar || curl -sL https://services.gradle.org/distributions/gradle-8.0-bin.zip -o /tmp/skip.zip || true
-          ls -lh android/gradle/wrapper/
+          ls -R android
 
-      - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew wrapper --gradle-version 8.0 || true
-          ./gradlew assembleDebug --no-daemon
+      - name: Build APK with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.0
+          arguments: assembleDebug
+          build-root-directory: android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
