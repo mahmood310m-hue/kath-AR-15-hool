@@ -1,0 +1,6 @@
+{
+  "appId": "com.kawthar.school",
+  "appName": "مدرسة الكوثر الأهلية",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
